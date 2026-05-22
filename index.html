@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>心情日記本｜每日情緒打卡</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', 'Inter', -apple-system, 'Noto Sans TC', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #fef7e9 0%, #fff0df 100%);
+            padding: 2rem 1.5rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        /* 標題區 */
+        .hero {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .hero h1 {
+            font-size: 2.6rem;
+            background: linear-gradient(135deg, #d48d3b, #b45f2b);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+        .hero p {
+            color: #b57a48;
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+
+        /* 共用卡片 */
+        .card {
+            background: rgba(255, 248, 240, 0.95);
+            border-radius: 32px;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+            padding: 1.8rem;
+            margin-bottom: 2rem;
+            border: 1px solid #ffe3c2;
+        }
+
+        .form-group {
+            margin-bottom: 1.3rem;
+        }
+        label {
+            font-weight: 600;
+            color: #7b4a2e;
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border-radius: 28px;
+            border: 1.5px solid #ffddb0;
+            background: white;
+            font-size: 1rem;
+            transition: 0.2s;
+            outline: none;
+        }
+        input:focus, select:focus, textarea:focus {
+            border-color: #d48d3b;
+            box-shadow: 0 0 0 3px rgba(212, 141, 59, 0.2);
+        }
+        .btn {
+            border: none;
+            background: #d48d3b;
+            color: white;
+            padding: 0.85rem 1.8rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn:hover {
+            background: #b46a2a;
+            transform: translateY(-2px);
+        }
+
+        /* filter 區域 */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: flex-start;
+            margin-bottom: 1.8rem;
+            background: #fff9f2;
+            padding: 0.8rem 1.2rem;
+            border-radius: 60px;
+        }
+        .filter-group {
+            display: flex;
+            gap: 0.6rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            background: #fff0e0;
+            border: none;
+            padding: 0.45rem 1.2rem;
+            border-radius: 40px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            color: #9b5e2c;
+        }
+        .filter-btn.active {
+            background: #d48d3b;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        /* 卡片列表 — 卡片樣式 */
+        .records-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+            gap: 1.6rem;
+        }
+        .mood-card {
+            background: white;
+            border-radius: 28px;
+            padding: 1.3rem 1.5rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            transition: all 0.2s;
+            border: 1px solid #ffebd2;
+            display: flex;
+            flex-direction: column;
+        }
+        /* done 狀態視覺區別 */
+        .mood-card.done {
+            opacity: 0.8;
+            background: #fef7ef;
+            border-left: 6px solid #cb8b5c;
+            filter: grayscale(0.03);
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            margin-bottom: 0.8rem;
+        }
+        .mood-badge {
+            background: #fff1e6;
+            padding: 0.25rem 1rem;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .card-date {
+            font-size: 0.7rem;
+            color: #af8866;
+        }
+        .content-text {
+            font-size: 1rem;
+            margin: 0.7rem 0;
+            font-weight: 500;
+            color: #4f3a2a;
+            background: #fffaf4;
+            padding: 0.7rem;
+            border-radius: 24px;
+            word-break: break-word;
+        }
+        .extra-field {
+            font-size: 0.85rem;
+            color: #b4682c;
+            margin-bottom: 0.5rem;
+            display: flex;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+        .card-actions {
+            display: flex;
+            gap: 0.8rem;
+            margin-top: 0.8rem;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .status-btn {
+            background: #eee5dc;
+            border: none;
+            padding: 0.4rem 1rem;
+            border-radius: 32px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .status-btn:hover {
+            background: #e2d5c8;
+        }
+        .done-label {
+            font-size: 0.7rem;
+            background: #e9cfb5;
+            padding: 0.2rem 0.7rem;
+            border-radius: 40px;
+            color: #6d3c1a;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #b77e4a;
+            font-size: 1.1rem;
+            background: #fff7ed;
+            border-radius: 48px;
+            grid-column: 1 / -1;
+        }
+        footer {
+            text-align: center;
+            margin-top: 2.5rem;
+            color: #be8a60;
+            font-size: 0.8rem;
+        }
+        hr {
+            margin: 0.5rem 0;
+            border-color: #ffe1c0;
+        }
+        .required-star {
+            color: #e07c3c;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="hero">
+        <h1>📔 心情日記本 · 情緒打卡</h1>
+        <p>紀錄每天的心情｜留下珍貴的當下感受</p>
+    </div>
+
+    <!-- 新增表單區塊 -->
+    <div class="card">
+        <h3 style="margin-bottom: 1rem; color:#7b4a2e;">✍️ 寫下今日心情</h3>
+        <form id="entryForm">
+            <div class="form-group">
+                <label>🌿 情緒狀態 <span class="required-star">(必填)</span></label>
+                <select id="moodInput" required>
+                    <option value="" disabled selected>—— 請選擇 ——</option>
+                    <option value="😊 開心">😊 開心</option>
+                    <option value="😌 平靜">😌 平靜</option>
+                    <option value="😢 難過">😢 難過</option>
+                    <option value="🤩 興奮">🤩 興奮</option>
+                    <option value="😤 煩躁">😤 煩躁</option>
+                    <option value="🥱 疲累">🥱 疲累</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>📝 心情小記 / 事件 <span class="required-star">(必填)</span></label>
+                <input type="text" id="contentInput" placeholder="例如：今天拿到好成績、和朋友聊天..." autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label>🏷️ 附加標籤 (可選) </label>
+                <input type="text" id="tagInput" placeholder="例：學業、休閒、家人、工作" autocomplete="off">
+            </div>
+            <button type="submit" class="btn">✨ 記錄心情</button>
+        </form>
+    </div>
+
+    <!-- 篩選列：全部 / active / done -->
+    <div class="filter-bar">
+        <div class="filter-group">
+            <span style="font-weight:500;">📌 狀態篩選：</span>
+            <button data-status="all" class="filter-btn active">全部</button>
+            <button data-status="active" class="filter-btn">🌟 進行中</button>
+            <button data-status="done" class="filter-btn">✅ 已封存</button>
+        </div>
+    </div>
+
+    <!-- 動態卡片列表區 -->
+    <div id="listContainer" class="records-grid">
+        <!-- 動態渲染 -->
+    </div>
+    <footer>💾 資料儲存在瀏覽器 localStorage · 重新整理後依然存在 · Level 1 前端系統</footer>
+</div>
+
+<script>
+    // ======================= DATA CONTRACT =======================
+    // 每筆 record 欄位定義與用途:
+    // {
+    //   id: 唯一識別碼 (字串) -> 用於更新/刪除識別
+    //   createdAt: ISO 日期字串 (new Date().toISOString()) -> 記錄建立時間
+    //   status: 'active' 或 'done' (預設 'active') -> 控制完成狀態
+    //   mood: 情緒 (對應 XXX_FIELD_1) 必填 -> 使用者的情緒選擇
+    //   content: 心情小記 (對應 XXX_FIELD_2) 必填 -> 主要文字內容
+    //   tag: 附加標籤 (對應 XXX_FIELD_3) 可選 -> 分類輔助
+    // }
+    // 主題：心情日記本 / 資料主體：心情記錄
+    // 顯示方式：卡片(grid卡片) ｜ done狀態顯示文字：「已封存」，視覺上透明度+左框線
+    // ================================================================
+
+    // localStorage key 固定 "records"
+    const STORAGE_KEY = 'records';
+    let records = [];           // 全域資料陣列
+    let currentStatusFilter = 'all';   // 'all', 'active', 'done'
+
+    // DOM 元素
+    const form = document.getElementById('entryForm');
+    const moodSelect = document.getElementById('moodInput');
+    const contentField = document.getElementById('contentInput');
+    const tagField = document.getElementById('tagInput');
+    const container = document.getElementById('listContainer');
+
+    // ---------- 輔助函數 ----------
+    function generateId() {
+        return Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+    }
+
+    // 1. createRecord(formData) : 根據表單內容建立新 record object
+    function createRecord(formData) {
+        // formData 應包含 mood, content, tag
+        if (!formData.mood || !formData.content) {
+            throw new Error('情緒與心情小記為必填欄位');
+        }
+        return {
+            id: generateId(),
+            createdAt: new Date().toISOString(),
+            status: 'active',               // 預設 active
+            mood: formData.mood,
+            content: formData.content.trim(),
+            tag: formData.tag ? formData.tag.trim() : ''
+        };
+    }
+
+    // 2. saveData(record) : 新增一筆 record 到 records array，寫入 localStorage
+    function saveData(record) {
+        records.unshift(record);    // 最新顯示在頁面上方 (符合新增後即時顯示)
+        persistToLocal();
+        // 重新渲染目前過濾後的列表
+        const filtered = getFilteredRecords();
+        renderList(filtered);
+    }
+
+    // 將目前 records 陣列寫入 localStorage
+    function persistToLocal() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+    }
+
+    // 3. loadData() : 從 localStorage 讀取，無資料則回傳 []
+    function loadData() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                // 確保每個 record 有預設結構 (相容舊版)
+                records = parsed.map(rec => ({
+                    id: rec.id || generateId(),
+                    createdAt: rec.createdAt || new Date().toISOString(),
+                    status: (rec.status === 'done' || rec.status === 'active') ? rec.status : 'active',
+                    mood: rec.mood || '😊 開心',
+                    content: rec.content || '',
+                    tag: rec.tag || ''
+                }));
+            } catch(e) {
+                records = [];
+            }
+        } else {
+            records = [];
+        }
+        return records;
+    }
+
+    // 4. updateRecord(id, changes) : 更新特定 record 並寫入 localStorage
+    function updateRecord(id, changes) {
+        const index = records.findIndex(r => r.id === id);
+        if (index !== -1) {
+            records[index] = { ...records[index], ...changes };
+            persistToLocal();
+            // 重新渲染目前過濾後的列表
+            const filtered = getFilteredRecords();
+            renderList(filtered);
+        }
+    }
+
+    // 切換 status (active <-> done)
+    function toggleStatus(id) {
+        const target = records.find(r => r.id === id);
+        if (target) {
+            const newStatus = target.status === 'active' ? 'done' : 'active';
+            updateRecord(id, { status: newStatus });
+        }
+    }
+
+    // 根據當前狀態 filter 取得要顯示的資料
+    function getFilteredRecords() {
+        if (currentStatusFilter === 'all') {
+            return [...records];
+        } else if (currentStatusFilter === 'active') {
+            return records.filter(r => r.status === 'active');
+        } else if (currentStatusFilter === 'done') {
+            return records.filter(r => r.status === 'done');
+        }
+        return [...records];
+    }
+
+    // 輔助: 格式化日期顯示 (本地友好)
+    function formatDate(isoString) {
+        if (!isoString) return '未知時間';
+        try {
+            const d = new Date(isoString);
+            return `${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+        } catch(e) {
+            return isoString.slice(0,16);
+        }
+    }
+
+    // 簡單防XSS
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    // 5. renderList(recordsToShow) : 把 records 顯示到頁面 (卡片形式)
+    function renderList(recordsToShow) {
+        if (!container) return;
+        if (!recordsToShow.length) {
+            container.innerHTML = `<div class="empty-state">📭 還沒有任何心情記錄～<br>寫下今天的心情吧！</div>`;
+            return;
+        }
+
+        let cardsHtml = '';
+        for (let record of recordsToShow) {
+            const isDone = record.status === 'done';
+            const cardClass = isDone ? 'mood-card done' : 'mood-card';
+            const statusDisplayText = isDone ? '📌 已封存' : '✨ 進行中';
+            const toggleButtonText = isDone ? '🔄 恢復 active' : '✅ 標記完成';
+            const doneExtraBadge = isDone ? '<span class="done-label">已完成(封存)</span>' : '';
+
+            const safeMood = escapeHtml(record.mood);
+            const safeContent = escapeHtml(record.content);
+            const safeTag = escapeHtml(record.tag);
+            const createdAtFormatted = formatDate(record.createdAt);
+
+            cardsHtml += `
+                <div class="${cardClass}" data-record-id="${record.id}">
+                    <div class="card-header">
+                        <span class="mood-badge">${safeMood}</span>
+                        <span class="card-date">📅 ${createdAtFormatted}</span>
+                    </div>
+                    <div class="content-text">
+                        💬 ${safeContent || '（未填寫內容）'}
+                    </div>
+                    <div class="extra-field">
+                        ${safeTag ? `🏷️ 標籤：${safeTag}` : '📎 無附加標籤'}
+                        ${doneExtraBadge}
+                    </div>
+                    <div class="card-actions">
+                        <button class="status-btn toggle-status" data-id="${record.id}">${toggleButtonText}</button>
+                        <span class="done-label" style="background: #f0e2d4;">${statusDisplayText}</span>
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = cardsHtml;
+
+        // 綁定按鈕事件 (切換 status)
+        const toggleBtns = document.querySelectorAll('.toggle-status');
+        toggleBtns.forEach(btn => {
+            btn.removeEventListener('click', handleToggle);
+            btn.addEventListener('click', handleToggle);
+        });
+    }
+
+    // 切換事件 handler
+    function handleToggle(e) {
+        const btn = e.currentTarget;
+        const id = btn.getAttribute('data-id');
+        if (id) {
+            toggleStatus(id);
+        }
+    }
+
+    // 處理表單新增
+    function handleFormSubmit(event) {
+        event.preventDefault();
+        const moodValue = moodSelect.value;
+        const contentValue = contentField.value.trim();
+        const tagValue = tagField.value.trim();
+
+        if (!moodValue) {
+            alert('請選擇情緒狀態 🌈');
+            return;
+        }
+        if (!contentValue) {
+            alert('請填寫心情小記 (必填欄位) 📝');
+            return;
+        }
+
+        // 建立 formData 物件
+        const formData = {
+            mood: moodValue,
+            content: contentValue,
+            tag: tagValue || ''
+        };
+
+        try {
+            const newRecord = createRecord(formData);
+            saveData(newRecord);   // 新增並儲存 + 重新渲染
+            // 清空表單 (保留情緒可重置但方便下筆，清空內容與標籤)
+            contentField.value = '';
+            tagField.value = '';
+            moodSelect.value = '';   // 讓使用者重新選擇 (避免連續新增相同情緒)
+            // 顯示小反饋但不用alert打擾，可聚焦
+            contentField.focus();
+        } catch (err) {
+            alert('新增失敗: ' + err.message);
+        }
+    }
+
+    // 綁定filter事件
+    function bindFilterEvents() {
+        const filterBtns = document.querySelectorAll('[data-status]');
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const statusValue = btn.getAttribute('data-status');
+                if (statusValue === 'all') currentStatusFilter = 'all';
+                else if (statusValue === 'active') currentStatusFilter = 'active';
+                else if (statusValue === 'done') currentStatusFilter = 'done';
+                // 更新按鈕樣式
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                // 重新取得過濾資料並渲染
+                const filtered = getFilteredRecords();
+                renderList(filtered);
+            });
+        });
+    }
+
+    // 初始化系統 (嚴格遵照職責)
+    function init() {
+        loadData();            // 載入 localStorage 資料
+        bindFilterEvents();    // 綁定 filter 按鈕
+        const initialFiltered = getFilteredRecords();
+        renderList(initialFiltered);
+        form.addEventListener('submit', handleFormSubmit);
+    }
+
+    // 啟動應用
+    init();
+</script>
+</body>
+</html>
