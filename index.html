@@ -90,34 +90,6 @@
             transform: translateY(-2px);
         }
 
-        /* 統計摘要樣式 */
-        .stats-bar {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-            margin-bottom: 1.8rem;
-            flex-wrap: wrap;
-        }
-        .stat-card {
-            background: white;
-            border-radius: 28px;
-            padding: 0.8rem 1.8rem;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            min-width: 120px;
-            border: 1px solid #ffe3c2;
-        }
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #d48d3b;
-        }
-        .stat-label {
-            font-size: 0.8rem;
-            color: #9b6a42;
-            margin-top: 0.3rem;
-        }
-
         .filter-bar {
             display: flex;
             flex-wrap: wrap;
@@ -302,22 +274,6 @@
         </form>
     </div>
 
-    <!-- 統計摘要區域 -->
-    <div class="stats-bar" id="statsBar">
-        <div class="stat-card">
-            <div class="stat-number" id="totalCount">0</div>
-            <div class="stat-label">總記錄數</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number" id="activeCount">0</div>
-            <div class="stat-label">進行中</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number" id="doneCount">0</div>
-            <div class="stat-label">已封存</div>
-        </div>
-    </div>
-
     <!-- 篩選列：狀態篩選 + 搜尋框 -->
     <div class="filter-bar">
         <div class="filter-group">
@@ -338,10 +294,21 @@
 
 <script>
     // ======================= DATA CONTRACT =======================
+    // 每筆 record 欄位定義與用途:
+    // {
+    //   id: 唯一識別碼 (字串) -> 用於更新/刪除識別
+    //   createdAt: ISO 日期字串 (new Date().toISOString()) -> 記錄建立時間
+    //   status: 'active' 或 'done' (預設 'active') -> 控制完成狀態
+    //   mood: 情緒 (對應 XXX_FIELD_1) 必填 -> 使用者的情緒選擇
+    //   content: 心情小記 (對應 XXX_FIELD_2) 必填 -> 主要文字內容
+    //   tag: 附加標籤 (對應 XXX_FIELD_3) 可選 -> 分類輔助
+    // }
+    // ================================================================
+
     const STORAGE_KEY = 'records';
     let records = [];
     let currentStatusFilter = 'all';
-    let searchKeyword = '';
+    let searchKeyword = '';  // 新增：搜尋關鍵字
 
     // DOM 元素
     const form = document.getElementById('entryForm');
@@ -349,12 +316,7 @@
     const contentField = document.getElementById('contentInput');
     const tagField = document.getElementById('tagInput');
     const container = document.getElementById('listContainer');
-    const searchInput = document.getElementById('searchInput');
-
-    // 統計摘要元素
-    const totalCountSpan = document.getElementById('totalCount');
-    const activeCountSpan = document.getElementById('activeCount');
-    const doneCountSpan = document.getElementById('doneCount');
+    const searchInput = document.getElementById('searchInput'); // 新增
 
     // ---------- 輔助函數 ----------
     function generateId() {
@@ -378,7 +340,6 @@
     function saveData(record) {
         records.unshift(record);
         persistToLocal();
-        updateStats();  // 更新統計
         const filtered = getFilteredRecords();
         renderList(filtered);
     }
@@ -406,7 +367,6 @@
         } else {
             records = [];
         }
-        updateStats();  // 更新統計
         return records;
     }
 
@@ -415,13 +375,8 @@
         if (index !== -1) {
             records[index] = { ...records[index], ...changes };
             persistToLocal();
-            updateStats();  // 更新統計
             const filtered = getFilteredRecords();
             renderList(filtered);
-            // 同步到 Sheet（如果已接入）
-            if (typeof syncToSheet === 'function') {
-                syncToSheet({ action: "update", id: id, changes: { Status: changes.status } });
-            }
         }
     }
 
@@ -430,16 +385,23 @@
         if (target) {
             const newStatus = target.status === 'active' ? 'done' : 'active';
             updateRecord(id, { status: newStatus });
+            // 同步到 Sheet（如果已接入）
+            if (typeof syncToSheet === 'function') {
+                syncToSheet({ action: "update", id: id, changes: { Status: newStatus } });
+            }
         }
     }
 
+    // 修改：加入搜尋過濾
     function getFilteredRecords() {
         let filtered = [...records];
+        // status filter
         if (currentStatusFilter === 'active') {
             filtered = filtered.filter(r => r.status === 'active');
         } else if (currentStatusFilter === 'done') {
             filtered = filtered.filter(r => r.status === 'done');
         }
+        // search keyword filter (比對 content 和 tag)
         if (searchKeyword.trim() !== '') {
             const kw = searchKeyword.trim().toLowerCase();
             filtered = filtered.filter(r => 
@@ -448,16 +410,6 @@
             );
         }
         return filtered;
-    }
-
-    // 更新統計摘要
-    function updateStats() {
-        const total = records.length;
-        const active = records.filter(r => r.status === 'active').length;
-        const done = records.filter(r => r.status === 'done').length;
-        if (totalCountSpan) totalCountSpan.textContent = total;
-        if (activeCountSpan) activeCountSpan.textContent = active;
-        if (doneCountSpan) doneCountSpan.textContent = done;
     }
 
     function formatDate(isoString) {
@@ -596,6 +548,7 @@
         });
     }
 
+    // 新增：綁定搜尋框事件
     function bindSearchEvent() {
         if (!searchInput) return;
         searchInput.addEventListener('input', (e) => {
@@ -605,7 +558,7 @@
         });
     }
 
-    // ---------- 後端同步函數 ----------
+    // ---------- 後端同步函數 (保持與你的 Apps Script 相容) ----------
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzcM8Vgn13JQYTjkrr6PuZdxWy8DPBSSN4JAlPVI-YC3iXg_btvrCLn3Dy4Sr2ZCQuKnw/exec";
 
     async function syncToSheet(payload) {
@@ -659,9 +612,8 @@
             loadData();
             console.log("網路失敗，使用 localStorage 快取");
         }
-        updateStats();  // 確保統計顯示
         bindFilterEvents();
-        bindSearchEvent();
+        bindSearchEvent();  // 新增
         const filtered = getFilteredRecords();
         renderList(filtered);
         form.addEventListener('submit', handleFormSubmit);
@@ -672,4 +624,3 @@
 </script>
 </body>
 </html>
-    
